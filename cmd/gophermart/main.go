@@ -4,11 +4,10 @@ import (
 	"context"
 	"github.com/caarlos0/env/v6"
 	"github.com/cyril-jump/gofermart/internal/config"
-	logger "github.com/cyril-jump/gofermart/internal/logger"
+	"github.com/cyril-jump/gofermart/internal/logger/zaplog"
 	"github.com/cyril-jump/gofermart/internal/server"
 	"github.com/cyril-jump/gofermart/internal/storage/postgres"
 	flag "github.com/spf13/pflag"
-	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
@@ -37,7 +36,7 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGINT)
 
 	// Init logger
-	l := logger.New()
+	logger := zaplog.New()
 
 	// Init config
 	//config
@@ -46,10 +45,10 @@ func main() {
 	// Init DB
 	psqlConn, err := cfg.Get("database_dsn_str")
 	if err != nil {
-		l.Zap.Error("", zap.Error(err))
+		logger.Fatal("database_dsn_str: ", err)
 	}
 
-	db := postgres.New(ctx, l, psqlConn)
+	db := postgres.New(ctx, logger, psqlConn)
 
 	// Init HTTPServer
 	srv := server.InitSrv(db)
@@ -58,7 +57,7 @@ func main() {
 
 		<-signalChan
 
-		l.Zap.Info("Shutting down...")
+		logger.Info("Shutting down...")
 
 		cancel()
 		if err := srv.Shutdown(ctx); err != nil && err != ctx.Err() {
@@ -66,13 +65,17 @@ func main() {
 		}
 
 		if err = db.Close(); err != nil {
-			l.Zap.Fatal("Failed db...", zap.Error(err))
+			logger.Fatal("Failed db...", err)
 		}
 
-		l.Close()
+		logger.Close()
 	}()
 
-	if err := srv.Start(":8080"); err != nil && err != http.ErrServerClosed {
+	serverAddress, err := cfg.Get("server_address_str")
+	if err != nil {
+		logger.Fatal("server_address_str: ", err)
+	}
+	if err := srv.Start(serverAddress); err != nil && err != http.ErrServerClosed {
 		srv.Logger.Fatal(err)
 	}
 }

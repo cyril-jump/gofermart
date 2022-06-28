@@ -1,19 +1,34 @@
 package config
 
-import "github.com/cyril-jump/gofermart/internal/utils/errs"
+import (
+	"github.com/cyril-jump/gofermart/internal/utils/errs"
+)
+
+// context const
+type contextKey string
+
+const (
+	TokenKey = contextKey("token")
+)
+
+func (c contextKey) String() string {
+	return string(c)
+}
 
 // flags
 
 var Flags struct {
-	ServerAddress string
-	DatabaseDSN   string
+	ServerAddress        string
+	DatabaseDSN          string
+	AccrualSystemAddress string
 }
 
 // env vars
 
 var EnvVar struct {
-	ServerAddress string `env:"SERVER_ADDRESS" envDefault:":8080"`
-	DatabaseDSN   string `env:"DATABASE_DSN" envDefault:"postgres://dmosk:dmosk@localhost:5432/dmosk?sslmode=disable"`
+	ServerAddress        string `env:"RUN_ADDRESS" envDefault:":8080"`
+	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
+	DatabaseDSN          string `env:"DATABASE_URI" envDefault:"postgres://dmosk:dmosk@localhost:5432/dmosk?sslmode=disable"`
 }
 
 // config

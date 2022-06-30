@@ -9,14 +9,14 @@ import (
 
 func (ck *Cookie) SessionWithCookies(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var login string
+		var userID string
 		var ok bool
 
 		cookie, err := c.Cookie(config.TokenKey.String())
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized)
 		} else {
-			login, ok, err = ck.CheckToken(cookie.Value)
+			userID, ok, err = ck.CheckToken(cookie.Value)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError)
 			} else {
@@ -26,7 +26,7 @@ func (ck *Cookie) SessionWithCookies(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 
-		c.SetRequest(c.Request().WithContext(context.WithValue(c.Request().Context(), config.TokenKey, login)))
+		c.SetRequest(c.Request().WithContext(context.WithValue(c.Request().Context(), config.TokenKey, userID)))
 
 		return next(c)
 	}

@@ -3,8 +3,10 @@ package storage
 import "github.com/cyril-jump/gofermart/internal/dto"
 
 type DB interface {
-	UserRegister(user dto.User) error
-	UserLogin(user dto.User) error
+	SetUserRegister(user dto.User) error
+	GetUserLogin(user dto.User) (string, error)
+	SetAccrualOrder(response dto.AccrualResponse) error
+	UpdateAccrualOrder(response dto.AccrualResponse) error
 	Ping() error
 	Close() error
 }

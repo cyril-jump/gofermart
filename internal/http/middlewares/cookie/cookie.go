@@ -29,24 +29,20 @@ func New(ctx context.Context) *Cookie {
 	}
 }
 
-func (ck *Cookie) CreateToken(login string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"user": login})
+func (ck *Cookie) CreateToken(userID string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"user": userID})
 	tokenString, _ := token.SignedString(ck.randNum)
 	return tokenString, nil
 }
 
 func (ck *Cookie) CheckToken(tokenString string) (string, bool, error) {
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexected signing method: %v", token.Header["alg"])
 		}
 		return ck.randNum, nil
 	})
-	if err != nil {
-		config.Logger.Fatal("", zap.Error(err))
-		return "", false, err
-	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return fmt.Sprintf("%s", claims["user"]), ok, nil
@@ -54,11 +50,11 @@ func (ck *Cookie) CheckToken(tokenString string) (string, bool, error) {
 	return "", false, nil
 }
 
-func (ck *Cookie) CreateCookie(c echo.Context, login string) error {
+func (ck *Cookie) CreateCookie(c echo.Context, userID string) error {
 	var err error
 	cookie := new(http.Cookie)
 	cookie.Path = "/"
-	cookie.Value, err = ck.CreateToken(login)
+	cookie.Value, err = ck.CreateToken(userID)
 	if err != nil {
 		return err
 	}

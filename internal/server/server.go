@@ -5,11 +5,12 @@ import (
 	"github.com/cyril-jump/gofermart/internal/http/handlers"
 	"github.com/cyril-jump/gofermart/internal/http/middlewares/cookie"
 	"github.com/cyril-jump/gofermart/internal/storage"
+	"github.com/cyril-jump/gofermart/internal/workerpool/input"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func InitSrv(ctx context.Context, db storage.DB) *echo.Echo {
+func InitSrv(ctx context.Context, db storage.DB, inWorker input.Worker) *echo.Echo {
 
 	//new Echo instance
 	e := echo.New()
@@ -22,16 +23,20 @@ func InitSrv(ctx context.Context, db storage.DB) *echo.Echo {
 	e.Use(middleware.Decompress())
 
 	//Handler
-	handler := handlers.New(db, ck)
+	handler := handlers.New(db, ck, inWorker)
+
+	//Restricted group
+	r := e.Group("")
+	r.Use(ck.SessionWithCookies)
 
 	//Routes
 	e.POST("/api/user/register", handler.PostUserRegister)
 	e.POST("/api/user/login", handler.PostUserLogin)
-	e.POST("/api/user/orders", handler.PostUserOrders)
-	e.GET("/api/user/orders", handler.GetUserOrders)
+	r.POST("/api/user/orders", handler.PostUserOrders)
+	r.GET("/api/user/orders", handler.GetUserOrders)
 	e.GET("/api/user/balance", handler.GetUserBalance)
-	e.POST("/api/user/balance/withdraw", handler.PostUserBalanceWithdraw)
-	e.GET("/api/user/balance/withdrawals", handler.GetUserBalanceWithdrawals)
+	r.POST("/api/user/balance/withdraw", handler.PostUserBalanceWithdraw)
+	r.GET("/api/user/balance/withdrawals", handler.GetUserBalanceWithdrawals)
 
 	return e
 }

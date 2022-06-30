@@ -15,6 +15,15 @@ func (c contextKey) String() string {
 	return string(c)
 }
 
+// status const
+
+const (
+	REGISTERED = "REGISTERED"
+	INVALID    = "INVALID"
+	PROCESSING = "PROCESSING"
+	PROCESSED  = "PROCESSED"
+)
+
 // flags
 
 var Flags struct {
@@ -27,7 +36,7 @@ var Flags struct {
 
 var EnvVar struct {
 	ServerAddress        string `env:"RUN_ADDRESS" envDefault:":8080"`
-	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
+	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS" envDefault:":9090"`
 	DatabaseDSN          string `env:"DATABASE_URI" envDefault:"postgres://dmosk:dmosk@localhost:5432/dmosk?sslmode=disable"`
 }
 
@@ -46,10 +55,11 @@ func (c Config) Get(key string) (string, error) {
 
 //constructor
 
-func NewConfig(srvAddr, databaseDSN string) *Config {
+func NewConfig(srvAddr, databaseDSN, accrualSystemAddress string) *Config {
 	cfg := make(map[string]string)
 	cfg["server_address_str"] = srvAddr
 	cfg["database_dsn_str"] = databaseDSN
+	cfg["accrual_system_address"] = accrualSystemAddress
 	return &Config{
 		cfg: cfg,
 	}

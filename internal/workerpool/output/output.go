@@ -63,9 +63,9 @@ func (w *Work) Do() error {
 	}
 }
 
-func (w *Work) Loop() {
+func (w *Work) Loop() error {
 	for range w.ctx.Done() {
 		w.ticker.Stop()
-		return
 	}
+	return nil
 }

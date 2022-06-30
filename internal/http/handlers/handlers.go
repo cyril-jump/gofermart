@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type Handler struct {
@@ -110,6 +111,10 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 	if err != nil || len(body) == 0 {
 		return c.NoContent(http.StatusUnprocessableEntity)
 	}
+	_, err = strconv.Atoi(string(body))
+	if err != nil {
+		return c.NoContent(http.StatusUnprocessableEntity)
+	}
 	order.NumOrder = string(body)
 	order.OrderStatus = config.REGISTERED
 
@@ -119,12 +124,12 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 	if err = h.db.SetAccrualOrder(order); err != nil {
 		if errors.Is(err, errs.ErrAlreadyUploadThisUser) {
 			return c.NoContent(http.StatusOK)
-		} else if errors.Is(err, errs.ErrAlreadyUploadOtherUser) {
-			return c.NoContent(http.StatusConflict)
-		} else {
-			config.Logger.Warn("", zap.Error(err))
-			return c.NoContent(http.StatusInternalServerError)
 		}
+		if errors.Is(err, errs.ErrAlreadyUploadOtherUser) {
+			return c.NoContent(http.StatusConflict)
+		}
+		config.Logger.Warn("", zap.Error(err))
+		return c.NoContent(http.StatusInternalServerError)
 	}
 	h.inWorker.Do(task)
 	return c.NoContent(http.StatusAccepted)
@@ -132,7 +137,7 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 
 func (h *Handler) GetUserOrders(c echo.Context) error {
 
-	orders := make([]dto.AccrualResponse, 0, 100)
+	orders := make([]dto.Order, 0, 100)
 	var err error
 	var userID string
 

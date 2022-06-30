@@ -7,7 +7,7 @@ type DB interface {
 	GetUserLogin(user dto.User) (string, error)
 	SetAccrualOrder(response dto.AccrualResponse) error
 	UpdateAccrualOrder(response dto.AccrualResponse) error
-	GetAccrualOrder(userID string) ([]dto.AccrualResponse, error)
+	GetAccrualOrder(userID string) ([]dto.Order, error)
 	Ping() error
 	Close() error
 }

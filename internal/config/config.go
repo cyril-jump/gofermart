@@ -35,8 +35,8 @@ var Flags struct {
 // env vars
 
 var EnvVar struct {
-	ServerAddress        string `env:"RUN_ADDRESS" envDefault:":8080"`
-	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS" envDefault:":9090"`
+	ServerAddress        string `env:"RUN_ADDRESS" envDefault:":9090"`
+	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS" envDefault:"http://127.0.0.1:8080"`
 	DatabaseDSN          string `env:"DATABASE_URI" envDefault:"postgres://dmosk:dmosk@localhost:5432/dmosk?sslmode=disable"`
 }
 

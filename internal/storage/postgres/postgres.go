@@ -119,7 +119,7 @@ func (db *DB) SetAccrualOrder(resp dto.AccrualResponse) error {
 	_, err = insertStmt.ExecContext(db.ctx, resp.UserID, resp.NumOrder, resp.OrderStatus, resp.Accrual, uploadedAt)
 	if err != nil {
 		if pgerrcode.IsIntegrityConstraintViolation(err.(*pgconn.PgError).Code) {
-			if err = selectStmt.QueryRowContext(db.ctx, resp.NumOrder).Scan(&userID); err != nil {
+			if err = selectStmt.QueryRowContext(db.ctx, resp.NumOrder).Scan(&resp); err != nil {
 				return err
 			}
 			if userID == resp.UserID {
@@ -151,6 +151,41 @@ func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse) error {
 	}
 
 	return nil
+}
+
+func (db *DB) GetAccrualOrder(userID string) ([]dto.AccrualResponse, error) {
+	db.mu.Lock()
+	orders := make([]dto.AccrualResponse, 0, 100)
+	var order dto.AccrualResponse
+	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT number, status, accrual, uploaded_at  FROM orders WHERE user_id=$1 ORDER BY uploaded_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		selectStmt.Close()
+		db.mu.Unlock()
+	}()
+
+	rows, err := selectStmt.QueryContext(db.ctx, userID)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		if err = rows.Scan(&order.NumOrder, &order.OrderStatus, &order.Accrual, &order.UploadedAt); err != nil {
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
+
+	if len(orders) == 0 {
+		return nil, errs.ErrNotFound
+	}
+	return orders, nil
 }
 
 func (db *DB) Ping() error {

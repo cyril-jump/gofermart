@@ -46,6 +46,9 @@ func (w *Work) Do() error {
 			}
 			break
 		case <-w.ticker.C:
+			if len(w.ringBuff) == 0 {
+				break
+			}
 			for oldEvent := range w.ringBuff {
 				wait, err := w.accrual.GetAccrual(w.ctx, oldEvent)
 				if err != nil {
@@ -65,5 +68,4 @@ func (w *Work) Loop() {
 		w.ticker.Stop()
 		return
 	}
-	return
 }

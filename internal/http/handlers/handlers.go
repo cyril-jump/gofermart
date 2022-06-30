@@ -55,7 +55,7 @@ func (h *Handler) PostUserRegister(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	if err = h.ck.CreateCookie(c, user.Login); err != nil {
+	if err = h.ck.CreateCookie(c, user.UserID); err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
@@ -126,12 +126,29 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
-	//h.inWorker.Do(task)
+	h.inWorker.Do(task)
 	return c.NoContent(http.StatusAccepted)
 }
 
 func (h *Handler) GetUserOrders(c echo.Context) error {
-	return c.NoContent(http.StatusOK)
+
+	orders := make([]dto.AccrualResponse, 0, 100)
+	var err error
+	var userID string
+
+	if id := c.Request().Context().Value(config.TokenKey); id != nil {
+		userID = id.(string)
+	}
+
+	if orders, err = h.db.GetAccrualOrder(userID); err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			return c.NoContent(http.StatusNoContent)
+		}
+		config.Logger.Warn("", zap.Error(err))
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(http.StatusOK, orders)
 }
 
 func (h *Handler) GetUserBalance(c echo.Context) error {

@@ -45,7 +45,9 @@ func (w *Work) Do() error {
 			if wait != 0 {
 				time.Sleep(time.Duration(wait) * time.Second)
 			}
-			break
+			if len(w.queue) == 0 {
+				break
+			}
 		case <-w.ticker.C:
 			if len(w.ringBuff) == 0 {
 				break
@@ -58,7 +60,9 @@ func (w *Work) Do() error {
 				if wait != 0 {
 					time.Sleep(time.Duration(wait) * time.Second)
 				}
-				break
+				if len(w.ringBuff) == 0 {
+					break
+				}
 			}
 		}
 	}

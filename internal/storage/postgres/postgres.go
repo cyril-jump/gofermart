@@ -99,7 +99,7 @@ func (db *DB) GetUserLogin(user dto.User) (string, error) {
 	return usr.UserID, nil
 }
 
-func (db *DB) SetAccrualOrder(resp dto.AccrualResponse) error {
+func (db *DB) SetAccrualOrder(resp dto.AccrualResponse, usrID string) error {
 	db.mu.Lock()
 	log.Print("SetAccrualOrder   ", resp)
 	var userID string
@@ -118,13 +118,13 @@ func (db *DB) SetAccrualOrder(resp dto.AccrualResponse) error {
 		db.mu.Unlock()
 	}()
 	uploadedAt := time.Now().Format(time.RFC3339)
-	_, err = insertStmt.ExecContext(db.ctx, resp.UserID, resp.NumOrder, resp.OrderStatus, resp.Accrual, uploadedAt)
+	_, err = insertStmt.ExecContext(db.ctx, usrID, resp.NumOrder, resp.OrderStatus, resp.Accrual, uploadedAt)
 	if err != nil {
 		if pgerrcode.IsIntegrityConstraintViolation(err.(*pgconn.PgError).Code) {
 			if err = selectStmt.QueryRowContext(db.ctx, resp.NumOrder).Scan(&userID); err != nil {
 				return err
 			}
-			if userID == resp.UserID {
+			if userID == usrID {
 				config.Logger.Warn(userID, zap.Error(err))
 				return errs.ErrAlreadyUploadThisUser
 			}
@@ -139,7 +139,7 @@ func (db *DB) SetAccrualOrder(resp dto.AccrualResponse) error {
 func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse) error {
 	db.mu.Lock()
 	log.Print("UpdateAccrualOrder   ", resp)
-	updateStmt, err := db.db.PrepareContext(db.ctx, "UPDATE orders SET status = $1, accrual = $2 WHERE user_id = $3")
+	updateStmt, err := db.db.PrepareContext(db.ctx, "UPDATE orders SET status = $1, accrual = $2 WHERE number = $3")
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse) error {
 		db.mu.Unlock()
 	}()
 
-	_, err = updateStmt.ExecContext(db.ctx, resp.OrderStatus, resp.Accrual, resp.UserID)
+	_, err = updateStmt.ExecContext(db.ctx, resp.OrderStatus, resp.Accrual, resp.NumOrder)
 	if err != nil {
 		return err
 	}

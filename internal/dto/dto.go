@@ -6,7 +6,6 @@ type Task struct {
 }
 
 type AccrualResponse struct {
-	UserID      string  `json:"user_id"`
 	NumOrder    string  `json:"order"`
 	OrderStatus string  `json:"status"`
 	Accrual     float32 `json:"accrual"`

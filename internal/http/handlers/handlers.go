@@ -14,6 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -103,11 +104,12 @@ func (h *Handler) PostUserLogin(c echo.Context) error {
 func (h *Handler) PostUserOrders(c echo.Context) error {
 	var order dto.AccrualResponse
 	var task dto.Task
+	var userID string
 
 	if id := c.Request().Context().Value(config.TokenKey); id != nil {
-		order.UserID = id.(string)
+		userID = id.(string)
 	}
-
+	log.Println(order)
 	if c.Request().Header.Get("Content-Type") != "text/plain" {
 		config.Logger.Info(c.Response().Header().Get("Content-Type"))
 		return c.NoContent(http.StatusBadRequest)
@@ -130,8 +132,9 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 	task.NumOrder = string(body)
 	task.IsNew = true
 
-	if err = h.db.SetAccrualOrder(order); err != nil {
+	if err = h.db.SetAccrualOrder(order, userID); err != nil {
 		if errors.Is(err, errs.ErrAlreadyUploadThisUser) {
+
 			return c.NoContent(http.StatusOK)
 		}
 		if errors.Is(err, errs.ErrAlreadyUploadOtherUser) {
@@ -140,6 +143,7 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 		config.Logger.Warn("PostUserOrders", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
 	h.inWorker.Do(task)
 	return c.NoContent(http.StatusAccepted)
 }
@@ -161,7 +165,7 @@ func (h *Handler) GetUserOrders(c echo.Context) error {
 		config.Logger.Warn("GetUserOrders", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
-
+	log.Println(orders)
 	return c.JSON(http.StatusOK, orders)
 }
 

@@ -5,7 +5,7 @@ import "github.com/cyril-jump/gofermart/internal/dto"
 type DB interface {
 	SetUserRegister(user dto.User) error
 	GetUserLogin(user dto.User) (string, error)
-	SetAccrualOrder(response dto.AccrualResponse) error
+	SetAccrualOrder(response dto.AccrualResponse, userID string) error
 	UpdateAccrualOrder(response dto.AccrualResponse) error
 	GetAccrualOrder(userID string) ([]dto.Order, error)
 	Ping() error

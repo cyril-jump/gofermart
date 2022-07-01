@@ -150,7 +150,7 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 
 func (h *Handler) GetUserOrders(c echo.Context) error {
 
-	orders := make([]dto.Order, 0, 100)
+	var orders []dto.Order
 	var err error
 	var userID string
 
@@ -166,6 +166,7 @@ func (h *Handler) GetUserOrders(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	log.Println(orders)
+	orders = nil
 	return c.JSON(http.StatusOK, orders)
 }
 

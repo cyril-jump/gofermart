@@ -8,6 +8,7 @@ import (
 	"github.com/cyril-jump/gofermart/internal/storage"
 	"github.com/cyril-jump/gofermart/internal/workerpool/input"
 	"github.com/go-resty/resty/v2"
+	"github.com/labstack/gommon/log"
 	"net/http"
 	"strconv"
 )
@@ -44,7 +45,7 @@ func (c *Accrual) GetAccrual(ctx context.Context, task dto.Task) (int, error) {
 			c.inWorker.Do(task)
 			return 0, err
 		}
-
+		log.Print("GetAccrual   ", accrualResp)
 		if accrualResp.OrderStatus == config.PROCESSED || accrualResp.OrderStatus == config.INVALID {
 			if err = c.db.UpdateAccrualOrder(accrualResp); err != nil {
 				c.inWorker.Do(task)
@@ -53,6 +54,12 @@ func (c *Accrual) GetAccrual(ctx context.Context, task dto.Task) (int, error) {
 		}
 
 		if accrualResp.OrderStatus == config.PROCESSING || accrualResp.OrderStatus == config.REGISTERED {
+			if accrualResp.OrderStatus == config.PROCESSING {
+				if err = c.db.UpdateAccrualOrder(accrualResp); err != nil {
+					c.inWorker.Do(task)
+					return 0, err
+				}
+			}
 			c.inWorker.Do(task)
 		}
 

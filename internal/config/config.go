@@ -18,6 +18,7 @@ func (c contextKey) String() string {
 // status const
 
 const (
+	NEW        = "NEW"
 	REGISTERED = "REGISTERED"
 	INVALID    = "INVALID"
 	PROCESSING = "PROCESSING"

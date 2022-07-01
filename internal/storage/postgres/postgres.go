@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/labstack/gommon/log"
 	"go.uber.org/zap"
 	"sync"
 	"time"
@@ -100,6 +101,7 @@ func (db *DB) GetUserLogin(user dto.User) (string, error) {
 
 func (db *DB) SetAccrualOrder(resp dto.AccrualResponse) error {
 	db.mu.Lock()
+	log.Print("SetAccrualOrder   ", resp)
 	var userID string
 	insertStmt, err := db.db.PrepareContext(db.ctx, "INSERT INTO orders (user_id, number, status, accrual, uploaded_at) VALUES ($1, $2, $3, $4, $5) RETURNING (user_id)")
 	if err != nil {
@@ -136,6 +138,7 @@ func (db *DB) SetAccrualOrder(resp dto.AccrualResponse) error {
 
 func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse) error {
 	db.mu.Lock()
+	log.Print("UpdateAccrualOrder   ", resp)
 	updateStmt, err := db.db.PrepareContext(db.ctx, "UPDATE orders SET status = $1, accrual = $2 WHERE user_id = $3")
 	if err != nil {
 		return err
@@ -155,6 +158,7 @@ func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse) error {
 
 func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
 	db.mu.Lock()
+	log.Print("GetAccrual   ", userID)
 	orders := make([]dto.Order, 0, 100)
 	var order dto.Order
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT number, status, accrual, uploaded_at  FROM orders WHERE user_id=$1 ORDER BY uploaded_at DESC")
@@ -185,6 +189,7 @@ func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
 	if len(orders) == 0 {
 		return nil, errs.ErrNotFound
 	}
+	log.Print("GetAccrual   ", orders)
 	return orders, nil
 }
 

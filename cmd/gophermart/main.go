@@ -74,8 +74,7 @@ func main() {
 		outWorker := output.NewOutputWorker(ctx, mu, q, rb, accrualClient)
 		g.Go(outWorker.Do)
 	}
-	outWorker := output.NewOutputWorker(ctx, mu, q, rb, accrualClient)
-	g.Go(outWorker.Loop)
+
 	// Init HTTPServer
 	srv := server.InitSrv(ctx, db, inWorker)
 

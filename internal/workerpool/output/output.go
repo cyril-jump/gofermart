@@ -35,6 +35,7 @@ func (w *Work) Do() error {
 	for {
 		select {
 		case <-w.ctx.Done():
+			w.ticker.Stop()
 			return nil
 		case eventNew := <-w.queue:
 			wait, err := w.accrual.GetAccrual(w.ctx, eventNew)
@@ -61,11 +62,4 @@ func (w *Work) Do() error {
 			}
 		}
 	}
-}
-
-func (w *Work) Loop() error {
-	for range w.ctx.Done() {
-		w.ticker.Stop()
-	}
-	return nil
 }

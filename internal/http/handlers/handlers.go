@@ -7,6 +7,7 @@ import (
 	"github.com/cyril-jump/gofermart/internal/dto"
 	"github.com/cyril-jump/gofermart/internal/http/middlewares/cookie"
 	"github.com/cyril-jump/gofermart/internal/storage"
+	"github.com/cyril-jump/gofermart/internal/utils"
 	"github.com/cyril-jump/gofermart/internal/utils/errs"
 	"github.com/cyril-jump/gofermart/internal/workerpool/input"
 	"github.com/google/uuid"
@@ -53,10 +54,12 @@ func (h *Handler) PostUserRegister(c echo.Context) error {
 		if errors.Is(err, errs.ErrAlreadyExists) {
 			return c.NoContent(http.StatusConflict)
 		}
+		config.Logger.Warn("PostUserRegister", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	if err = h.ck.CreateCookie(c, user.UserID); err != nil {
+		config.Logger.Warn("PostUserRegister", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
@@ -86,9 +89,11 @@ func (h *Handler) PostUserLogin(c echo.Context) error {
 		if errors.Is(err, errs.ErrBadLoginOrPass) {
 			return c.NoContent(http.StatusUnauthorized)
 		}
+		config.Logger.Warn("PostUserLogin", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	if err = h.ck.CreateCookie(c, userID); err != nil {
+		config.Logger.Warn("PostUserLogin", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
@@ -111,12 +116,16 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 	if err != nil || len(body) == 0 {
 		return c.NoContent(http.StatusUnprocessableEntity)
 	}
-	_, err = strconv.Atoi(string(body))
+	num, err := strconv.Atoi(string(body))
 	if err != nil {
 		return c.NoContent(http.StatusUnprocessableEntity)
 	}
+	if ok := utils.ValidOrder(num); !ok {
+		return c.NoContent(http.StatusUnprocessableEntity)
+	}
 	order.NumOrder = string(body)
-	order.OrderStatus = config.REGISTERED
+	order.OrderStatus = config.NEW
+	order.Accrual = 0.0
 
 	task.NumOrder = string(body)
 	task.IsNew = true
@@ -128,7 +137,7 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 		if errors.Is(err, errs.ErrAlreadyUploadOtherUser) {
 			return c.NoContent(http.StatusConflict)
 		}
-		config.Logger.Warn("", zap.Error(err))
+		config.Logger.Warn("PostUserOrders", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	h.inWorker.Do(task)
@@ -149,7 +158,7 @@ func (h *Handler) GetUserOrders(c echo.Context) error {
 		if errors.Is(err, errs.ErrNotFound) {
 			return c.NoContent(http.StatusNoContent)
 		}
-		config.Logger.Warn("", zap.Error(err))
+		config.Logger.Warn("GetUserOrders", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 

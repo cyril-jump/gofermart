@@ -166,7 +166,7 @@ func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse, userID string) error 
 		return err
 	}
 
-	_, err = tx.StmtContext(db.ctx, updateStmt2).ExecContext(db.ctx, userID, resp.Accrual)
+	_, err = tx.StmtContext(db.ctx, updateStmt2).ExecContext(db.ctx, resp.Accrual, userID)
 	if err != nil {
 		return err
 	}
@@ -262,5 +262,10 @@ var schema = `
 	    status text not null,
 	    accrual float not null,
 	    uploaded_at timestamp
+	);
+	CREATE TABLE IF NOT EXISTS withdrawals (
+		order_number text not null unique references orders(number),
+		sum float not null,
+		processed_at timestamp
 	);
 `

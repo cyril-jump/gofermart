@@ -350,7 +350,7 @@ var schema = `
 		login text not null unique,
 		password text not null,
         "current" float not null default 0,
-        withdrawn int not null  default 0
+        withdrawn float not null  default 0
 	);
 	CREATE TABLE IF NOT EXISTS orders (
 	  	"number" text primary key unique,

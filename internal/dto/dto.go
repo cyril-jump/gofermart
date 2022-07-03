@@ -26,6 +26,12 @@ type User struct {
 }
 
 type UserBalance struct {
-	Current   string `json:"current"`
-	Withdrawn string `json:"withdrawn"`
+	Current   float32 `json:"current"`
+	Withdrawn float32 `json:"withdrawn"`
+}
+
+type Withdrawals struct {
+	Order       string  `json:"order"`
+	Sum         float32 `json:"sum"`
+	ProcessedAt string  `json:"processed_at,omitempty"`
 }

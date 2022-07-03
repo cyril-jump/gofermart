@@ -240,6 +240,66 @@ func (db *DB) GetUserBalance(userID string) (*dto.UserBalance, error) {
 
 }
 
+func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error {
+	db.mu.Lock()
+	log.Print("SetBalanceWithdraw   ", userID)
+	var ok bool
+	var balance float32
+
+	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT true FROM orders WHERE user_id=$1 and number=$2")
+	if err != nil {
+		return err
+	}
+
+	insertStmt, err := db.db.PrepareContext(db.ctx, "INSERT INTO withdrawals (order_number, sum, processed_at) VALUES ($1, $2, $3)")
+	if err != nil {
+		return err
+	}
+
+	updateStmt, err := db.db.PrepareContext(db.ctx, "UPDATE users SET current = current - $1, withdrawn = withdrawn + $1 WHERE id = $2 RETURNING current")
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.db.BeginTx(db.ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		selectStmt.Close()
+		updateStmt.Close()
+		insertStmt.Close()
+		tx.Rollback()
+		db.mu.Unlock()
+	}()
+
+	if err = selectStmt.QueryRowContext(db.ctx, userID, withdraw.Order).Scan(&ok); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errs.ErrNotFound
+		}
+		return err
+	}
+	processedAt := time.Now().Format(time.RFC3339)
+	_, err = tx.StmtContext(db.ctx, insertStmt).ExecContext(db.ctx, withdraw.Order, withdraw.Sum, processedAt)
+	if err != nil {
+		return err
+	}
+
+	if err = tx.StmtContext(db.ctx, updateStmt).QueryRowContext(db.ctx, withdraw.Sum, userID).Scan(&balance); err != nil {
+		return err
+	}
+	if balance < 0 {
+		return errs.ErrInsufficientFunds
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *DB) Ping() error {
 	return db.db.Ping()
 }
@@ -265,7 +325,7 @@ var schema = `
 	);
 	CREATE TABLE IF NOT EXISTS withdrawals (
 		order_number text not null unique references orders(number),
-		sum float not null,
+		"sum" float not null,
 		processed_at timestamp
 	);
 `

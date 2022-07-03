@@ -194,6 +194,35 @@ func (h *Handler) GetUserBalance(c echo.Context) error {
 }
 
 func (h *Handler) PostUserBalanceWithdraw(c echo.Context) error {
+
+	var withdrawals dto.Withdrawals
+	var userID string
+
+	if id := c.Request().Context().Value(config.TokenKey); id != nil {
+		userID = id.(string)
+	}
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil || len(body) == 0 {
+		return c.NoContent(http.StatusBadRequest)
+	}
+
+	err = json.Unmarshal(body, &withdrawals)
+	if err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+
+	if err = h.db.SetBalanceWithdraw(userID, withdrawals); err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			return c.NoContent(http.StatusUnprocessableEntity)
+		}
+		if errors.Is(err, errs.ErrInsufficientFunds) {
+			return c.NoContent(http.StatusPaymentRequired)
+		}
+		config.Logger.Warn("PostUserBalanceWithdraw", zap.Error(err))
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
 	return c.NoContent(http.StatusOK)
 }
 

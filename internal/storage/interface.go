@@ -9,6 +9,7 @@ type DB interface {
 	UpdateAccrualOrder(response dto.AccrualResponse, userID string) error
 	GetAccrualOrder(userID string) ([]dto.Order, error)
 	GetUserBalance(userID string) (*dto.UserBalance, error)
+	SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error
 	Ping() error
 	Close() error
 }

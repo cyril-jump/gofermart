@@ -242,7 +242,7 @@ func (db *DB) GetUserBalance(userID string) (*dto.UserBalance, error) {
 
 func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error {
 	db.mu.Lock()
-	log.Print("SetBalanceWithdraw   ", userID)
+	log.Print("SetBalanceWithdraw   ", userID, withdraw)
 	var ok bool
 	var balance float32
 

@@ -1,6 +1,7 @@
 package dto
 
 type Task struct {
+	UserID   string
 	NumOrder string
 	IsNew    bool
 }
@@ -22,4 +23,9 @@ type User struct {
 	UserID   string `json:"user_id"`
 	Login    string `json:"login"`
 	Password string `json:"password"`
+}
+
+type UserBalance struct {
+	Current   string `json:"current"`
+	Withdrawn string `json:"withdrawn"`
 }

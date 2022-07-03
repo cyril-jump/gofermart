@@ -34,7 +34,7 @@ func InitSrv(ctx context.Context, db storage.DB, inWorker input.Worker) *echo.Ec
 	e.POST("/api/user/login", handler.PostUserLogin)
 	r.POST("/api/user/orders", handler.PostUserOrders)
 	r.GET("/api/user/orders", handler.GetUserOrders)
-	e.GET("/api/user/balance", handler.GetUserBalance)
+	r.GET("/api/user/balance", handler.GetUserBalance)
 	r.POST("/api/user/balance/withdraw", handler.PostUserBalanceWithdraw)
 	r.GET("/api/user/balance/withdrawals", handler.GetUserBalanceWithdrawals)
 

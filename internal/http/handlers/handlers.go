@@ -93,6 +93,9 @@ func (h *Handler) PostUserLogin(c echo.Context) error {
 		config.Logger.Warn("PostUserLogin", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	config.Logger.Info(userID)
+
 	if err = h.ck.CreateCookie(c, userID); err != nil {
 		config.Logger.Warn("PostUserLogin", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
@@ -129,6 +132,7 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 	order.OrderStatus = config.NEW
 	order.Accrual = 0.0
 
+	task.UserID = userID
 	task.NumOrder = string(body)
 	task.IsNew = true
 
@@ -166,12 +170,27 @@ func (h *Handler) GetUserOrders(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	log.Println(orders)
-	orders = nil
 	return c.JSON(http.StatusOK, orders)
 }
 
 func (h *Handler) GetUserBalance(c echo.Context) error {
-	return c.NoContent(http.StatusOK)
+
+	var useBalance *dto.UserBalance
+	var err error
+	var userID string
+
+	if id := c.Request().Context().Value(config.TokenKey); id != nil {
+		userID = id.(string)
+	}
+
+	config.Logger.Info(userID)
+
+	if useBalance, err = h.db.GetUserBalance(userID); err != nil {
+		config.Logger.Warn("GetUserOrders", zap.Error(err))
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(http.StatusOK, &useBalance)
 }
 
 func (h *Handler) PostUserBalanceWithdraw(c echo.Context) error {

@@ -47,7 +47,7 @@ func (c *Accrual) GetAccrual(ctx context.Context, task dto.Task) (int, error) {
 		}
 		log.Print("GetAccrual   ", accrualResp)
 		if accrualResp.OrderStatus == config.PROCESSED || accrualResp.OrderStatus == config.INVALID {
-			if err = c.db.UpdateAccrualOrder(accrualResp); err != nil {
+			if err = c.db.UpdateAccrualOrder(accrualResp, task.UserID); err != nil {
 				c.inWorker.Do(task)
 				return 0, err
 			}
@@ -55,7 +55,7 @@ func (c *Accrual) GetAccrual(ctx context.Context, task dto.Task) (int, error) {
 
 		if accrualResp.OrderStatus == config.PROCESSING || accrualResp.OrderStatus == config.REGISTERED {
 			if accrualResp.OrderStatus == config.PROCESSING {
-				if err = c.db.UpdateAccrualOrder(accrualResp); err != nil {
+				if err = c.db.UpdateAccrualOrder(accrualResp, task.UserID); err != nil {
 					c.inWorker.Do(task)
 					return 0, err
 				}

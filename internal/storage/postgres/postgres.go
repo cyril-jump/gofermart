@@ -136,19 +136,42 @@ func (db *DB) SetAccrualOrder(resp dto.AccrualResponse, usrID string) error {
 	return nil
 }
 
-func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse) error {
+func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse, userID string) error {
 	db.mu.Lock()
 	log.Print("UpdateAccrualOrder   ", resp)
-	updateStmt, err := db.db.PrepareContext(db.ctx, "UPDATE orders SET status = $1, accrual = $2 WHERE number = $3")
+	updateStmt1, err := db.db.PrepareContext(db.ctx, "UPDATE orders SET status = $1, accrual = $2 WHERE number = $3")
 	if err != nil {
 		return err
 	}
+
+	updateStmt2, err := db.db.PrepareContext(db.ctx, "UPDATE users SET current = current + $1 WHERE id = $2")
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.db.BeginTx(db.ctx, nil)
+	if err != nil {
+		return err
+	}
+
 	defer func() {
-		updateStmt.Close()
+		updateStmt1.Close()
+		updateStmt2.Close()
+		tx.Rollback()
 		db.mu.Unlock()
 	}()
 
-	_, err = updateStmt.ExecContext(db.ctx, resp.OrderStatus, resp.Accrual, resp.NumOrder)
+	_, err = tx.StmtContext(db.ctx, updateStmt1).ExecContext(db.ctx, resp.OrderStatus, resp.Accrual, resp.NumOrder)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.StmtContext(db.ctx, updateStmt2).ExecContext(db.ctx, userID, resp.Accrual)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return err
 	}
@@ -191,6 +214,30 @@ func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
 	}
 	log.Print("GetAccrual   ", orders)
 	return orders, nil
+}
+
+func (db *DB) GetUserBalance(userID string) (*dto.UserBalance, error) {
+	db.mu.Lock()
+	log.Print("GetUserBalance   ", userID)
+	var usrBalance dto.UserBalance
+
+	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT current ,withdrawn FROM users WHERE id=$1")
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		selectStmt.Close()
+		db.mu.Unlock()
+	}()
+
+	err = selectStmt.QueryRowContext(db.ctx, userID).Scan(&usrBalance.Current, &usrBalance.Withdrawn)
+	if err != nil {
+		return nil, err
+	}
+
+	return &usrBalance, nil
+
 }
 
 func (db *DB) Ping() error {

@@ -10,6 +10,7 @@ type DB interface {
 	GetAccrualOrder(userID string) ([]dto.Order, error)
 	GetUserBalance(userID string) (*dto.UserBalance, error)
 	SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error
+	GetBalanceWithdrawals(userID string) ([]dto.Withdrawals, error)
 	Ping() error
 	Close() error
 }

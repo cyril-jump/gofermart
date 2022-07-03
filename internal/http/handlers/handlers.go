@@ -169,7 +169,6 @@ func (h *Handler) GetUserOrders(c echo.Context) error {
 		config.Logger.Warn("GetUserOrders", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	log.Println(orders)
 	return c.JSON(http.StatusOK, orders)
 }
 
@@ -227,5 +226,20 @@ func (h *Handler) PostUserBalanceWithdraw(c echo.Context) error {
 }
 
 func (h *Handler) GetUserBalanceWithdrawals(c echo.Context) error {
-	return c.NoContent(http.StatusOK)
+	var withdrawals []dto.Withdrawals
+	var err error
+	var userID string
+
+	if id := c.Request().Context().Value(config.TokenKey); id != nil {
+		userID = id.(string)
+	}
+
+	if withdrawals, err = h.db.GetBalanceWithdrawals(userID); err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			return c.NoContent(http.StatusNoContent)
+		}
+		config.Logger.Warn("GetUserOrders", zap.Error(err))
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.JSON(http.StatusOK, withdrawals)
 }

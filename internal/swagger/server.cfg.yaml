@@ -1,0 +1,9 @@
+output:
+  internal/http/api/gofermart.gen.go
+package: api
+additional-imports:
+  - package: github.com/cyril-jump/gofermart/internal/dto
+    alias: .
+generate:
+  echo-server: true
+  embedded-spec: true

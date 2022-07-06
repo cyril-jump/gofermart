@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/cyril-jump/gofermart/internal/config"
 	"github.com/cyril-jump/gofermart/internal/utils"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -62,4 +64,38 @@ func (ck *Cookie) CreateCookie(c echo.Context, userID string) error {
 	c.SetCookie(cookie)
 	c.Request().AddCookie(cookie)
 	return nil
+}
+
+func (ck *Cookie) Authenticator(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+
+	return echo.NewHTTPError(http.StatusUnauthorized)
+	//input.RequestValidationInput.Request.Clone(context.WithValue(ctx, config.TokenKey, userID))
+
+}
+
+func (ck *Cookie) ErrorHandler(c echo.Context, err *echo.HTTPError) error {
+	log.Info(err)
+	return err
+}
+
+func (ck *Cookie) Skipper(c echo.Context) bool {
+	log.Info("Skip")
+	var userID string
+	var ok bool
+	cookie, err := c.Cookie(config.TokenKey.String())
+	if err != nil {
+		return false
+	} else {
+		userID, ok, err = ck.CheckToken(cookie.Value)
+		if err != nil {
+			return false
+		} else {
+			if !ok {
+				return false
+			}
+		}
+	}
+	c.SetRequest(c.Request().WithContext(context.WithValue(c.Request().Context(), config.TokenKey, userID)))
+
+	return true
 }

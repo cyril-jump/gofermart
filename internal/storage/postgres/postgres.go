@@ -49,6 +49,7 @@ func New(ctx context.Context, psqlConn string) *DB {
 
 func (db *DB) SetUserRegister(user dto.User) error {
 	db.mu.Lock()
+
 	hash, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return err
@@ -62,7 +63,7 @@ func (db *DB) SetUserRegister(user dto.User) error {
 		insertStmt.Close()
 		db.mu.Unlock()
 	}()
-
+	log.Print(user.UserID)
 	_, err = insertStmt.ExecContext(db.ctx, user.UserID, user.Login, hash)
 	if err != nil {
 		if pgerrcode.IsIntegrityConstraintViolation(err.(*pgconn.PgError).Code) {

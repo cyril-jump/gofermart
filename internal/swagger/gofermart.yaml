@@ -1,0 +1,234 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Swagger Gofermart
+  description: A sample API that uses a gofermart in the OpenAPI 3.0 specification
+  contact:
+    name: Cyril Agafonov
+    email: cyriljupm@gmail.com
+  license:
+    name: Horns and Hooves Company 2.0
+servers:
+  - url: http://gofermart.io/api
+paths:
+  /api/user/register:
+    post:
+      summary: User registration
+      operationId: PostUserRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+      responses:
+        '200':
+          description: The user is successfully registered and authenticated
+        '400':
+          description: Invalid request format
+        '409':
+          description:  Login is already occupied
+        '500':
+          description:  Internal server error
+  /api/user/login:
+    post:
+      description: User authentication
+      operationId: PostUserLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+      responses:
+        '200':
+          description: The user is successfully authenticated
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        '400':
+          description: Invalid request format
+        '401':
+          description: Invalid login/password pair
+        '500':
+          description: Internal server error
+  /api/user/orders:
+    post:
+      security:
+        - cookieAuth: [ ]
+      description: Load order number
+      operationId: PostUserOrders
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: The order number has already been uploaded by this user
+        '202':
+          description: New order number accepted for processing
+        '400':
+          description: Invalid request format
+        '401':
+          description: User not authenticated
+        '409':
+          description: The order number has already been uploaded by another user
+        '422':
+          description: Invalid order number format
+        '500':
+          description: Internal server error
+    get:
+      security:
+        - cookieAuth: [ ]
+      description: Getting a list of loaded order numbers
+      operationId: GetUserOrders
+      responses:
+        '200':
+          description: Successful processing of the request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order1'
+        '204':
+          description: No response data
+        '401':
+          description: The user is not authorized
+        '500':
+          description: Internal server error
+  /api/user/balance:
+    get:
+      security:
+        - cookieAuth: [ ]
+      description: Getting the user's current balance
+      operationId: GetUserBalance
+      responses:
+        '200':
+          description: Successful processing of the request
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/UserBalance1'
+        '401':
+          description: The user is not authorized
+        '500':
+          description: Internal server error
+  /api/user/balance/withdraw:
+    post:
+      security:
+        - cookieAuth: [ ]
+      description: Withdrawal request
+      operationId: PostUserBalanceWithdraw
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BalanceWithdraw'
+      responses:
+        '200':
+          description: Successful processing of the request
+        '401':
+          description: The user is not authorized
+        '402':
+          description: There are not enough funds on the account
+        '422':
+          description: Invalid order number
+        '500':
+          description: Internal server error
+  /api/user/withdrawals:
+    get:
+      security:
+        - cookieAuth: [ ]
+      description: Getting information about the withdrawal of funds
+      operationId: GetUserBalanceWithdrawals
+      responses:
+        '200':
+          description: Successful processing of the request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Withdrawals1'
+        '204':
+          description: No write-offs
+        '401':
+          description: The user is not authorized
+        '500':
+          description: Internal server error
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+  schemas:
+    NewUser:
+      type: object
+      required:
+        - login
+        - password
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+    Order1:
+      type: object
+      required:
+        - number
+        - accrual
+        - status
+        - uploaded_at
+      properties:
+        number:
+          type: string
+        status:
+          type: string
+        accrual:
+          type: number
+          format: float
+        uploaded_at:
+          type: string
+    UserBalance1:
+      type: object
+      required:
+        - current
+        - withdrawn
+      properties:
+        current:
+          type: number
+          format: float
+        withdrawn:
+          type: number
+          format: float
+    BalanceWithdraw:
+      type: object
+      required:
+        - order
+        - sum
+      properties:
+        order:
+          type: string
+        sum:
+          type: number
+          format: float
+    Withdrawals1:
+      type: object
+      required:
+        - order
+        - sum
+        - processed_at
+      properties:
+        order:
+          type: string
+        sum:
+          type: number
+          format: float
+        processed_at:
+          type: string

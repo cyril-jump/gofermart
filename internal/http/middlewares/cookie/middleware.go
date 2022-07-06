@@ -9,6 +9,11 @@ import (
 
 func (ck *Cookie) SessionWithCookies(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+
+		if c.Path() == "/api/user/login" || c.Path() == "/api/user/register" {
+			return next(c)
+		}
+
 		var userID string
 		var ok bool
 
@@ -25,7 +30,6 @@ func (ck *Cookie) SessionWithCookies(next echo.HandlerFunc) echo.HandlerFunc {
 				}
 			}
 		}
-
 		c.SetRequest(c.Request().WithContext(context.WithValue(c.Request().Context(), config.TokenKey, userID)))
 
 		return next(c)

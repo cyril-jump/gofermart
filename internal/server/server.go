@@ -3,19 +3,19 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/cyril-jump/gofermart/internal/http/api"
-	"github.com/cyril-jump/gofermart/internal/http/middlewares/cookie"
-	"github.com/cyril-jump/gofermart/internal/service"
-	"github.com/cyril-jump/gofermart/internal/storage"
-	"github.com/cyril-jump/gofermart/internal/workerpool/input"
+	"os"
+
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
-	"os"
+
+	"github.com/cyril-jump/gofermart/internal/http/api"
+	"github.com/cyril-jump/gofermart/internal/http/middlewares/cookie"
+	"github.com/cyril-jump/gofermart/internal/service"
 )
 
-func InitSrv(ctx context.Context, db storage.DB, inWorker input.Worker, usr service.UsrService, ord service.OrdService, acr service.AcrService) *echo.Echo {
+func InitSrv(ctx context.Context, usr service.UsrService, ord service.OrdService) *echo.Echo {
 
 	//new Echo instance
 	e := echo.New()
@@ -40,7 +40,7 @@ func InitSrv(ctx context.Context, db storage.DB, inWorker input.Worker, usr serv
 	}
 	swagger.Servers = nil
 
-	server := api.New(db, ck, inWorker, usr, ord, acr)
+	server := api.New(ck, usr, ord)
 
 	validator := middleware.OapiRequestValidatorWithOptions(swagger,
 		&middleware.Options{

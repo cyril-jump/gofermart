@@ -2,12 +2,14 @@ package output
 
 import (
 	"context"
-	"github.com/cyril-jump/gofermart/internal/config"
-	"github.com/cyril-jump/gofermart/internal/dto"
-	"github.com/cyril-jump/gofermart/internal/http/client"
-	"go.uber.org/zap"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/cyril-jump/gofermart/internal/config"
+	"github.com/cyril-jump/gofermart/internal/dto"
+	"github.com/cyril-jump/gofermart/internal/service"
 )
 
 type Work struct {
@@ -16,10 +18,10 @@ type Work struct {
 	queue    chan dto.Task
 	ringBuff chan dto.Task
 	ticker   *time.Ticker
-	accrual  client.Client
+	acr      service.AcrService
 }
 
-func NewOutputWorker(ctx context.Context, mu *sync.Mutex, queue chan dto.Task, ringBuff chan dto.Task, accrual client.Client) *Work {
+func NewOutputWorker(ctx context.Context, mu *sync.Mutex, queue chan dto.Task, ringBuff chan dto.Task, acr service.AcrService) *Work {
 	ticker := time.NewTicker(10 * time.Second)
 	return &Work{
 		mu:       mu,
@@ -27,7 +29,7 @@ func NewOutputWorker(ctx context.Context, mu *sync.Mutex, queue chan dto.Task, r
 		queue:    queue,
 		ringBuff: ringBuff,
 		ticker:   ticker,
-		accrual:  accrual,
+		acr:      acr,
 	}
 }
 
@@ -38,7 +40,7 @@ func (w *Work) Do() error {
 			w.ticker.Stop()
 			return nil
 		case eventNew := <-w.queue:
-			wait, err := w.accrual.GetAccrual(w.ctx, eventNew)
+			wait, err := w.acr.UpdateOrder(w.ctx, eventNew)
 			if err != nil {
 				config.Logger.Warn("", zap.Error(err))
 			}
@@ -50,7 +52,7 @@ func (w *Work) Do() error {
 				break
 			}
 			for oldEvent := range w.ringBuff {
-				wait, err := w.accrual.GetAccrual(w.ctx, oldEvent)
+				wait, err := w.acr.UpdateOrder(w.ctx, oldEvent)
 				if err != nil {
 					config.Logger.Warn("", zap.Error(err))
 				}

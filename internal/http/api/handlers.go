@@ -3,6 +3,13 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"strconv"
+
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+
 	"github.com/cyril-jump/gofermart/internal/config"
 	"github.com/cyril-jump/gofermart/internal/dto"
 	"github.com/cyril-jump/gofermart/internal/http/middlewares/cookie"
@@ -11,30 +18,21 @@ import (
 	"github.com/cyril-jump/gofermart/internal/utils"
 	"github.com/cyril-jump/gofermart/internal/utils/errs"
 	"github.com/cyril-jump/gofermart/internal/workerpool/input"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
-	"io"
-	"net/http"
-	"strconv"
 )
 
 type Handler struct {
 	usr      service.UsrService
 	ord      service.OrdService
-	acr      service.AcrService
 	db       storage.DB
 	ck       cookie.Cooker
 	inWorker input.Worker
 }
 
-func New(db storage.DB, ck cookie.Cooker, inWorker input.Worker, usr service.UsrService, ord service.OrdService, acr service.AcrService) *Handler {
+func New(ck cookie.Cooker, usr service.UsrService, ord service.OrdService) *Handler {
 	return &Handler{
-		db:       db,
-		ck:       ck,
-		inWorker: inWorker,
-		usr:      usr,
-		ord:      ord,
-		acr:      acr,
+		ck:  ck,
+		usr: usr,
+		ord: ord,
 	}
 }
 

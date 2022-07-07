@@ -6,5 +6,5 @@ import (
 )
 
 type Client interface {
-	GetAccrual(ctx context.Context, task dto.Task) (int, error)
+	GetAccrual(ctx context.Context, task dto.Task) (int, dto.AccrualResponse, error)
 }

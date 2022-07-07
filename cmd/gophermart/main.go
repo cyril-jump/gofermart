@@ -76,19 +76,19 @@ func main() {
 	}
 	accrualClient := client.New(accrualConn, inWorker, db)
 
-	// Init Workers
-	for i := 1; i <= runtime.NumCPU(); i++ {
-		outWorker := output.NewOutputWorker(ctx, mu, q, rb, accrualClient)
-		g.Go(outWorker.Do)
-	}
-
 	//Init Services
 	ursService := user.New(usrDB)
 	ordService := order.New(ordDB, inWorker)
-	acrService := accrual.New(acrDB)
+	acrService := accrual.New(acrDB, inWorker, accrualClient)
+
+	// Init Workers
+	for i := 1; i <= runtime.NumCPU(); i++ {
+		outWorker := output.NewOutputWorker(ctx, mu, q, rb, acrService)
+		g.Go(outWorker.Do)
+	}
 
 	// Init HTTPServer
-	srv := server.InitSrv(ctx, db, inWorker, ursService, ordService, acrService)
+	srv := server.InitSrv(ctx, ursService, ordService)
 
 	go func() {
 

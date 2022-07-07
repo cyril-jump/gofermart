@@ -1,6 +1,9 @@
 package service
 
-import "github.com/cyril-jump/gofermart/internal/dto"
+import (
+	"context"
+	"github.com/cyril-jump/gofermart/internal/dto"
+)
 
 type UsrService interface {
 	Register(user dto.NewUser) (string, error)
@@ -8,6 +11,7 @@ type UsrService interface {
 }
 
 type AcrService interface {
+	UpdateOrder(ctx context.Context, event dto.Task) (int, error)
 }
 
 type OrdService interface {

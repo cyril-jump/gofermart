@@ -155,7 +155,7 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 
 func (h *Handler) GetUserOrders(c echo.Context) error {
 
-	var orders []dto.Order1
+	var orders []dto.Order
 	var err error
 	var userID string
 
@@ -163,7 +163,7 @@ func (h *Handler) GetUserOrders(c echo.Context) error {
 		userID = id.(string)
 	}
 
-	if orders, err = h.db.GetAccrualOrder(userID); err != nil {
+	if orders, err = h.ord.GetAllUserOrders(userID); err != nil {
 		if errors.Is(err, errs.ErrNotFound) {
 			return c.NoContent(http.StatusNoContent)
 		}
@@ -175,7 +175,7 @@ func (h *Handler) GetUserOrders(c echo.Context) error {
 
 func (h *Handler) GetUserBalance(c echo.Context) error {
 
-	var useBalance dto.UserBalance1
+	var useBalance dto.UserBalance
 	var err error
 	var userID string
 
@@ -195,7 +195,7 @@ func (h *Handler) GetUserBalance(c echo.Context) error {
 
 func (h *Handler) PostUserBalanceWithdraw(c echo.Context) error {
 
-	var withdrawals dto.Withdrawals1
+	var withdrawals dto.Withdrawals
 	var userID string
 
 	if id := c.Request().Context().Value(config.TokenKey); id != nil {
@@ -227,7 +227,7 @@ func (h *Handler) PostUserBalanceWithdraw(c echo.Context) error {
 }
 
 func (h *Handler) GetUserBalanceWithdrawals(c echo.Context) error {
-	var withdrawals []dto.Withdrawals1
+	var withdrawals []dto.Withdrawals
 	var err error
 	var userID string
 

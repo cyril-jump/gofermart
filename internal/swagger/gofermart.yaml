@@ -93,7 +93,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Order1'
+                  $ref: '#/components/schemas/Order'
         '204':
           description: No response data
         '401':
@@ -112,7 +112,7 @@ paths:
           content:
             application/json:
               schema:
-                  $ref: '#/components/schemas/UserBalance1'
+                  $ref: '#/components/schemas/UserBalance'
         '401':
           description: The user is not authorized
         '500':
@@ -154,7 +154,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Withdrawals1'
+                  $ref: '#/components/schemas/Withdrawals'
         '204':
           description: No write-offs
         '401':
@@ -178,7 +178,7 @@ components:
           type: string
         password:
           type: string
-    Order1:
+    Order:
       type: object
       required:
         - number
@@ -195,7 +195,7 @@ components:
           format: float
         uploaded_at:
           type: string
-    UserBalance1:
+    UserBalance:
       type: object
       required:
         - current
@@ -218,7 +218,7 @@ components:
         sum:
           type: number
           format: float
-    Withdrawals1:
+    Withdrawals:
       type: object
       required:
         - order

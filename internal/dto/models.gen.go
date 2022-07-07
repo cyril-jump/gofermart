@@ -19,22 +19,22 @@ type NewUser struct {
 	Password string `json:"password"`
 }
 
-// Order1 defines model for Order1.
-type Order1 struct {
+// Order defines model for Order.
+type Order struct {
 	Accrual    float32 `json:"accrual"`
 	Number     string  `json:"number"`
 	Status     string  `json:"status"`
 	UploadedAt string  `json:"uploaded_at"`
 }
 
-// UserBalance1 defines model for UserBalance1.
-type UserBalance1 struct {
+// UserBalance defines model for UserBalance.
+type UserBalance struct {
 	Current   float32 `json:"current"`
 	Withdrawn float32 `json:"withdrawn"`
 }
 
-// Withdrawals1 defines model for Withdrawals1.
-type Withdrawals1 struct {
+// Withdrawals defines model for Withdrawals.
+type Withdrawals struct {
 	Order       string  `json:"order"`
 	ProcessedAt string  `json:"processed_at"`
 	Sum         float32 `json:"sum"`

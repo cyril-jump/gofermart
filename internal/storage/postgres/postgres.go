@@ -72,7 +72,8 @@ func (db *DB) SetUserRegister(user dto.NewUser, userID string) error {
 }
 
 func (db *DB) GetUserLogin(user dto.NewUser) (string, error) {
-	var usr dto.User
+	var usr dto.NewUser
+	var userID string
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT id, login,password FROM users WHERE login=$1")
 	if err != nil {
 		return "", err
@@ -81,7 +82,7 @@ func (db *DB) GetUserLogin(user dto.NewUser) (string, error) {
 		selectStmt.Close()
 	}()
 
-	if err = selectStmt.QueryRowContext(db.ctx, user.Login).Scan(&usr.UserID, &usr.Login, &usr.Password); err != nil {
+	if err = selectStmt.QueryRowContext(db.ctx, user.Login).Scan(&userID, &usr.Login, &usr.Password); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", errs.ErrBadLoginOrPass
 		}
@@ -91,7 +92,7 @@ func (db *DB) GetUserLogin(user dto.NewUser) (string, error) {
 	if !ok {
 		return "", errs.ErrBadLoginOrPass
 	}
-	return usr.UserID, nil
+	return userID, nil
 }
 
 func (db *DB) SetAccrualOrder(resp dto.AccrualResponse, usrID string) error {
@@ -170,10 +171,10 @@ func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse, userID string) error 
 	return nil
 }
 
-func (db *DB) GetAccrualOrder(userID string) ([]dto.Order1, error) {
+func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
 	log.Print("GetAccrual   ", userID)
-	orders := make([]dto.Order1, 0, 100)
-	var order dto.Order1
+	orders := make([]dto.Order, 0, 100)
+	var order dto.Order
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT number, status, accrual, uploaded_at  FROM orders WHERE user_id=$1 ORDER BY uploaded_at DESC")
 	if err != nil {
 		return nil, err
@@ -205,13 +206,13 @@ func (db *DB) GetAccrualOrder(userID string) ([]dto.Order1, error) {
 	return orders, nil
 }
 
-func (db *DB) GetUserBalance(userID string) (dto.UserBalance1, error) {
+func (db *DB) GetUserBalance(userID string) (dto.UserBalance, error) {
 	log.Print("GetUserBalance   ", userID)
-	var usrBalance dto.UserBalance1
+	var usrBalance dto.UserBalance
 
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT current ,withdrawn FROM users WHERE id=$1")
 	if err != nil {
-		return dto.UserBalance1{}, err
+		return dto.UserBalance{}, err
 	}
 
 	defer func() {
@@ -220,14 +221,14 @@ func (db *DB) GetUserBalance(userID string) (dto.UserBalance1, error) {
 
 	err = selectStmt.QueryRowContext(db.ctx, userID).Scan(&usrBalance.Current, &usrBalance.Withdrawn)
 	if err != nil {
-		return dto.UserBalance1{}, err
+		return dto.UserBalance{}, err
 	}
 
 	return usrBalance, nil
 
 }
 
-func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals1) error {
+func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error {
 	log.Print("SetBalanceWithdraw   ", userID, withdraw)
 	var ok bool
 	var balance float32
@@ -284,10 +285,10 @@ func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals1) error
 	return errs.ErrAlreadyExists
 }
 
-func (db *DB) GetBalanceWithdrawals(userID string) ([]dto.Withdrawals1, error) {
+func (db *DB) GetBalanceWithdrawals(userID string) ([]dto.Withdrawals, error) {
 	log.Print("GetBalanceWithdrawals   ", userID)
-	withdraws := make([]dto.Withdrawals1, 0, 100)
-	var withdraw dto.Withdrawals1
+	withdraws := make([]dto.Withdrawals, 0, 100)
+	var withdraw dto.Withdrawals
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT order_number, sum, processed_at  FROM withdrawals WHERE user_id=$1 ORDER BY processed_at DESC")
 	if err != nil {
 		return nil, err

@@ -26,6 +26,7 @@ func (o *OrdService) SetNewOrder(orderNum, userID string) error {
 
 	order.OrderStatus = config.NEW
 	order.Accrual = 0.0
+	order.NumOrder = orderNum
 
 	task.UserID = userID
 	task.NumOrder = orderNum
@@ -40,8 +41,8 @@ func (o *OrdService) SetNewOrder(orderNum, userID string) error {
 	return nil
 }
 
-func (o *OrdService) GetAllUserOrders(userID string) ([]dto.Order1, error) {
-	var orders []dto.Order1
+func (o *OrdService) GetAllUserOrders(userID string) ([]dto.Order, error) {
+	var orders []dto.Order
 	var err error
 
 	if orders, err = o.db.GetAccrualOrder(userID); err != nil {
@@ -51,19 +52,19 @@ func (o *OrdService) GetAllUserOrders(userID string) ([]dto.Order1, error) {
 
 }
 
-func (o *OrdService) CheckBalance(userID string) (dto.UserBalance1, error) {
+func (o *OrdService) CheckBalance(userID string) (dto.UserBalance, error) {
 
-	var useBalance dto.UserBalance1
+	var useBalance dto.UserBalance
 	var err error
 
 	if useBalance, err = o.db.GetUserBalance(userID); err != nil {
-		return dto.UserBalance1{}, err
+		return dto.UserBalance{}, err
 	}
 
 	return useBalance, nil
 }
 
-func (o *OrdService) SetBalanceWithdraw(withdrawals dto.Withdrawals1, userID string) error {
+func (o *OrdService) SetBalanceWithdraw(withdrawals dto.Withdrawals, userID string) error {
 
 	if err := o.db.SetBalanceWithdraw(userID, withdrawals); err != nil {
 		return err
@@ -71,9 +72,9 @@ func (o *OrdService) SetBalanceWithdraw(withdrawals dto.Withdrawals1, userID str
 	return nil
 }
 
-func (o *OrdService) CheckBalanceWithdraw(userID string) ([]dto.Withdrawals1, error) {
+func (o *OrdService) CheckBalanceWithdraw(userID string) ([]dto.Withdrawals, error) {
 	var err error
-	var withdrawals []dto.Withdrawals1
+	var withdrawals []dto.Withdrawals
 
 	if withdrawals, err = o.db.GetBalanceWithdrawals(userID); err != nil {
 		return nil, err

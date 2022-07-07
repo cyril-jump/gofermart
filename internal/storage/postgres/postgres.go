@@ -14,12 +14,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/gommon/log"
 	"go.uber.org/zap"
-	"sync"
 	"time"
 )
 
 type DB struct {
-	mu  sync.Mutex
 	db  *sqlx.DB
 	ctx context.Context
 }
@@ -47,8 +45,7 @@ func New(ctx context.Context, psqlConn string) *DB {
 	}
 }
 
-func (db *DB) SetUserRegister(user dto.User) error {
-	db.mu.Lock()
+func (db *DB) SetUserRegister(user dto.NewUser, userID string) error {
 
 	hash, err := utils.HashPassword(user.Password)
 	if err != nil {
@@ -61,10 +58,9 @@ func (db *DB) SetUserRegister(user dto.User) error {
 
 	defer func() {
 		insertStmt.Close()
-		db.mu.Unlock()
 	}()
-	log.Print(user.UserID)
-	_, err = insertStmt.ExecContext(db.ctx, user.UserID, user.Login, hash)
+	log.Info("userID: ", userID)
+	_, err = insertStmt.ExecContext(db.ctx, userID, user.Login, hash)
 	if err != nil {
 		if pgerrcode.IsIntegrityConstraintViolation(err.(*pgconn.PgError).Code) {
 			return errs.ErrAlreadyExists
@@ -75,8 +71,7 @@ func (db *DB) SetUserRegister(user dto.User) error {
 
 }
 
-func (db *DB) GetUserLogin(user dto.User) (string, error) {
-	db.mu.Lock()
+func (db *DB) GetUserLogin(user dto.NewUser) (string, error) {
 	var usr dto.User
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT id, login,password FROM users WHERE login=$1")
 	if err != nil {
@@ -84,7 +79,6 @@ func (db *DB) GetUserLogin(user dto.User) (string, error) {
 	}
 	defer func() {
 		selectStmt.Close()
-		db.mu.Unlock()
 	}()
 
 	if err = selectStmt.QueryRowContext(db.ctx, user.Login).Scan(&usr.UserID, &usr.Login, &usr.Password); err != nil {
@@ -101,7 +95,6 @@ func (db *DB) GetUserLogin(user dto.User) (string, error) {
 }
 
 func (db *DB) SetAccrualOrder(resp dto.AccrualResponse, usrID string) error {
-	db.mu.Lock()
 	log.Print("SetAccrualOrder   ", resp)
 	var userID string
 	insertStmt, err := db.db.PrepareContext(db.ctx, "INSERT INTO orders (user_id, number, status, accrual, uploaded_at) VALUES ($1, $2, $3, $4, $5) RETURNING (user_id)")
@@ -116,7 +109,6 @@ func (db *DB) SetAccrualOrder(resp dto.AccrualResponse, usrID string) error {
 	defer func() {
 		insertStmt.Close()
 		selectStmt.Close()
-		db.mu.Unlock()
 	}()
 	uploadedAt := time.Now().Format(time.RFC3339)
 	_, err = insertStmt.ExecContext(db.ctx, usrID, resp.NumOrder, resp.OrderStatus, resp.Accrual, uploadedAt)
@@ -138,7 +130,6 @@ func (db *DB) SetAccrualOrder(resp dto.AccrualResponse, usrID string) error {
 }
 
 func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse, userID string) error {
-	db.mu.Lock()
 	log.Print("UpdateAccrualOrder   ", resp)
 	updateStmt1, err := db.db.PrepareContext(db.ctx, "UPDATE orders SET status = $1, accrual = $2 WHERE number = $3")
 	if err != nil {
@@ -159,7 +150,6 @@ func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse, userID string) error 
 		updateStmt1.Close()
 		updateStmt2.Close()
 		tx.Rollback()
-		db.mu.Unlock()
 	}()
 
 	_, err = tx.StmtContext(db.ctx, updateStmt1).ExecContext(db.ctx, resp.OrderStatus, resp.Accrual, resp.NumOrder)
@@ -181,7 +171,6 @@ func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse, userID string) error 
 }
 
 func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
-	db.mu.Lock()
 	log.Print("GetAccrual   ", userID)
 	orders := make([]dto.Order, 0, 100)
 	var order dto.Order
@@ -197,7 +186,6 @@ func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
 	defer func() {
 		selectStmt.Close()
 		rows.Close()
-		db.mu.Unlock()
 	}()
 
 	if err = rows.Err(); err != nil {
@@ -218,7 +206,6 @@ func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
 }
 
 func (db *DB) GetUserBalance(userID string) (*dto.UserBalance, error) {
-	db.mu.Lock()
 	log.Print("GetUserBalance   ", userID)
 	var usrBalance dto.UserBalance
 
@@ -229,7 +216,6 @@ func (db *DB) GetUserBalance(userID string) (*dto.UserBalance, error) {
 
 	defer func() {
 		selectStmt.Close()
-		db.mu.Unlock()
 	}()
 
 	err = selectStmt.QueryRowContext(db.ctx, userID).Scan(&usrBalance.Current, &usrBalance.Withdrawn)
@@ -242,7 +228,6 @@ func (db *DB) GetUserBalance(userID string) (*dto.UserBalance, error) {
 }
 
 func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error {
-	db.mu.Lock()
 	log.Print("SetBalanceWithdraw   ", userID, withdraw)
 	var ok bool
 	var balance float32
@@ -272,7 +257,6 @@ func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error 
 		updateStmt.Close()
 		insertStmt.Close()
 		tx.Rollback()
-		db.mu.Unlock()
 	}()
 
 	if err = selectStmt.QueryRowContext(db.ctx, userID, withdraw.Order).Scan(&ok); err != nil {
@@ -301,7 +285,6 @@ func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error 
 }
 
 func (db *DB) GetBalanceWithdrawals(userID string) ([]dto.Withdrawals, error) {
-	db.mu.Lock()
 	log.Print("GetBalanceWithdrawals   ", userID)
 	withdraws := make([]dto.Withdrawals, 0, 100)
 	var withdraw dto.Withdrawals
@@ -317,7 +300,6 @@ func (db *DB) GetBalanceWithdrawals(userID string) ([]dto.Withdrawals, error) {
 	defer func() {
 		selectStmt.Close()
 		rows.Close()
-		db.mu.Unlock()
 	}()
 
 	if err = rows.Err(); err != nil {

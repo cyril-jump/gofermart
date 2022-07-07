@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/cyril-jump/gofermart/internal/http/api"
 	"github.com/cyril-jump/gofermart/internal/http/middlewares/cookie"
+	"github.com/cyril-jump/gofermart/internal/service"
 	"github.com/cyril-jump/gofermart/internal/storage"
 	"github.com/cyril-jump/gofermart/internal/workerpool/input"
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
@@ -14,7 +15,7 @@ import (
 	"os"
 )
 
-func InitSrv(ctx context.Context, db storage.DB, inWorker input.Worker) *echo.Echo {
+func InitSrv(ctx context.Context, db storage.DB, inWorker input.Worker, usr service.UsrService, ord service.OrdService, acr service.AcrService) *echo.Echo {
 
 	//new Echo instance
 	e := echo.New()
@@ -39,7 +40,7 @@ func InitSrv(ctx context.Context, db storage.DB, inWorker input.Worker) *echo.Ec
 	}
 	swagger.Servers = nil
 
-	server := api.New(db, ck, inWorker)
+	server := api.New(db, ck, inWorker, usr, ord, acr)
 
 	validator := middleware.OapiRequestValidatorWithOptions(swagger,
 		&middleware.Options{

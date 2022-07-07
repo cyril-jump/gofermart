@@ -67,7 +67,7 @@ func (ck *Cookie) CreateCookie(c echo.Context, userID string) error {
 }
 
 func (ck *Cookie) Authenticator(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-
+	log.Info("Authenticator")
 	return echo.NewHTTPError(http.StatusUnauthorized)
 	//input.RequestValidationInput.Request.Clone(context.WithValue(ctx, config.TokenKey, userID))
 

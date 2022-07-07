@@ -1,5 +1,5 @@
 package: dto
 generate:
   models: true
-output: internal/dto/models.gen.go
+output: ../dto/models.gen.go
 embedded-spec: true

@@ -6,11 +6,11 @@ import (
 	"github.com/cyril-jump/gofermart/internal/config"
 	"github.com/cyril-jump/gofermart/internal/dto"
 	"github.com/cyril-jump/gofermart/internal/http/middlewares/cookie"
+	"github.com/cyril-jump/gofermart/internal/service"
 	"github.com/cyril-jump/gofermart/internal/storage"
 	"github.com/cyril-jump/gofermart/internal/utils"
 	"github.com/cyril-jump/gofermart/internal/utils/errs"
 	"github.com/cyril-jump/gofermart/internal/workerpool/input"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"io"
@@ -20,57 +20,28 @@ import (
 )
 
 type Handler struct {
+	usr      service.UsrService
+	ord      service.OrdService
+	acr      service.AcrService
 	db       storage.DB
 	ck       cookie.Cooker
 	inWorker input.Worker
 }
 
-func New(db storage.DB, ck cookie.Cooker, inWorker input.Worker) *Handler {
+func New(db storage.DB, ck cookie.Cooker, inWorker input.Worker, usr service.UsrService, ord service.OrdService, acr service.AcrService) *Handler {
 	return &Handler{
 		db:       db,
 		ck:       ck,
 		inWorker: inWorker,
+		usr:      usr,
+		ord:      ord,
+		acr:      acr,
 	}
 }
 
 func (h Handler) PostUserRegister(c echo.Context) error {
 
-	var user dto.User
-	user.UserID = uuid.New().String()
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil || len(body) == 0 {
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	err = json.Unmarshal(body, &user)
-	if err != nil {
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	if user.Login == "" || user.Password == "" {
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	if err = h.db.SetUserRegister(user); err != nil {
-		if errors.Is(err, errs.ErrAlreadyExists) {
-			return c.NoContent(http.StatusConflict)
-		}
-		config.Logger.Warn("PostUserRegister", zap.Error(err))
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	if err = h.ck.CreateCookie(c, user.UserID); err != nil {
-		config.Logger.Warn("PostUserRegister", zap.Error(err))
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	return c.NoContent(http.StatusOK)
-
-}
-
-func (h Handler) PostUserLogin(c echo.Context) error {
-
-	var user dto.User
+	var user dto.NewUser
 	var userID string
 
 	body, err := io.ReadAll(c.Request().Body)
@@ -87,7 +58,43 @@ func (h Handler) PostUserLogin(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	if userID, err = h.db.GetUserLogin(user); err != nil {
+	if userID, err = h.usr.Register(user); err != nil {
+		if errors.Is(err, errs.ErrAlreadyExists) {
+			return c.NoContent(http.StatusConflict)
+		}
+		config.Logger.Warn("PostUserRegister", zap.Error(err))
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	if err = h.ck.CreateCookie(c, userID); err != nil {
+		config.Logger.Warn("PostUserRegister", zap.Error(err))
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.NoContent(http.StatusOK)
+
+}
+
+func (h Handler) PostUserLogin(c echo.Context) error {
+
+	var user dto.NewUser
+	var userID string
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil || len(body) == 0 {
+		return c.NoContent(http.StatusBadRequest)
+	}
+
+	err = json.Unmarshal(body, &user)
+	if err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+
+	if user.Login == "" || user.Password == "" {
+		return c.NoContent(http.StatusBadRequest)
+	}
+
+	if userID, err = h.usr.Login(user); err != nil {
 		if errors.Is(err, errs.ErrBadLoginOrPass) {
 			return c.NoContent(http.StatusUnauthorized)
 		}

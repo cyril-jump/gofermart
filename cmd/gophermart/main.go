@@ -7,6 +7,10 @@ import (
 	"github.com/cyril-jump/gofermart/internal/dto"
 	"github.com/cyril-jump/gofermart/internal/http/client"
 	"github.com/cyril-jump/gofermart/internal/server"
+	"github.com/cyril-jump/gofermart/internal/service/accrual"
+	"github.com/cyril-jump/gofermart/internal/service/order"
+	"github.com/cyril-jump/gofermart/internal/service/user"
+	"github.com/cyril-jump/gofermart/internal/storage"
 	"github.com/cyril-jump/gofermart/internal/storage/postgres"
 	"github.com/cyril-jump/gofermart/internal/workerpool/input"
 	"github.com/cyril-jump/gofermart/internal/workerpool/output"
@@ -53,6 +57,9 @@ func main() {
 	}
 
 	db := postgres.New(ctx, psqlConn)
+	usrDB := storage.UserDB(db)
+	ordDB := storage.OrderDB(db)
+	acrDB := storage.AccrualDB(db)
 
 	// Init Workers
 	g, _ := errgroup.WithContext(ctx)
@@ -75,8 +82,13 @@ func main() {
 		g.Go(outWorker.Do)
 	}
 
+	//Init Services
+	ursService := user.New(usrDB)
+	ordService := order.New(ordDB)
+	acrService := accrual.New(acrDB)
+
 	// Init HTTPServer
-	srv := server.InitSrv(ctx, db, inWorker)
+	srv := server.InitSrv(ctx, db, inWorker, ursService, ordService, acrService)
 
 	go func() {
 

@@ -170,10 +170,10 @@ func (db *DB) UpdateAccrualOrder(resp dto.AccrualResponse, userID string) error 
 	return nil
 }
 
-func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
+func (db *DB) GetAccrualOrder(userID string) ([]dto.Order1, error) {
 	log.Print("GetAccrual   ", userID)
-	orders := make([]dto.Order, 0, 100)
-	var order dto.Order
+	orders := make([]dto.Order1, 0, 100)
+	var order dto.Order1
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT number, status, accrual, uploaded_at  FROM orders WHERE user_id=$1 ORDER BY uploaded_at DESC")
 	if err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
 		return nil, err
 	}
 	for rows.Next() {
-		if err = rows.Scan(&order.NumOrder, &order.OrderStatus, &order.Accrual, &order.UploadedAt); err != nil {
+		if err = rows.Scan(&order.Number, &order.Status, &order.Accrual, &order.UploadedAt); err != nil {
 			return nil, err
 		}
 		orders = append(orders, order)
@@ -205,13 +205,13 @@ func (db *DB) GetAccrualOrder(userID string) ([]dto.Order, error) {
 	return orders, nil
 }
 
-func (db *DB) GetUserBalance(userID string) (*dto.UserBalance, error) {
+func (db *DB) GetUserBalance(userID string) (dto.UserBalance1, error) {
 	log.Print("GetUserBalance   ", userID)
-	var usrBalance dto.UserBalance
+	var usrBalance dto.UserBalance1
 
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT current ,withdrawn FROM users WHERE id=$1")
 	if err != nil {
-		return nil, err
+		return dto.UserBalance1{}, err
 	}
 
 	defer func() {
@@ -220,14 +220,14 @@ func (db *DB) GetUserBalance(userID string) (*dto.UserBalance, error) {
 
 	err = selectStmt.QueryRowContext(db.ctx, userID).Scan(&usrBalance.Current, &usrBalance.Withdrawn)
 	if err != nil {
-		return nil, err
+		return dto.UserBalance1{}, err
 	}
 
-	return &usrBalance, nil
+	return usrBalance, nil
 
 }
 
-func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error {
+func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals1) error {
 	log.Print("SetBalanceWithdraw   ", userID, withdraw)
 	var ok bool
 	var balance float32
@@ -284,10 +284,10 @@ func (db *DB) SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error 
 	return errs.ErrAlreadyExists
 }
 
-func (db *DB) GetBalanceWithdrawals(userID string) ([]dto.Withdrawals, error) {
+func (db *DB) GetBalanceWithdrawals(userID string) ([]dto.Withdrawals1, error) {
 	log.Print("GetBalanceWithdrawals   ", userID)
-	withdraws := make([]dto.Withdrawals, 0, 100)
-	var withdraw dto.Withdrawals
+	withdraws := make([]dto.Withdrawals1, 0, 100)
+	var withdraw dto.Withdrawals1
 	selectStmt, err := db.db.PrepareContext(db.ctx, "SELECT order_number, sum, processed_at  FROM withdrawals WHERE user_id=$1 ORDER BY processed_at DESC")
 	if err != nil {
 		return nil, err

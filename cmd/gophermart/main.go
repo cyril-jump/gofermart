@@ -84,7 +84,7 @@ func main() {
 
 	//Init Services
 	ursService := user.New(usrDB)
-	ordService := order.New(ordDB)
+	ordService := order.New(ordDB, inWorker)
 	acrService := accrual.New(acrDB)
 
 	// Init HTTPServer

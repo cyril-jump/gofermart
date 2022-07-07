@@ -14,7 +14,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -113,14 +112,15 @@ func (h Handler) PostUserLogin(c echo.Context) error {
 }
 
 func (h *Handler) PostUserOrders(c echo.Context) error {
-	var order dto.AccrualResponse
-	var task dto.Task
+
 	var userID string
+	var orderNum string
+	var err error
 
 	if id := c.Request().Context().Value(config.TokenKey); id != nil {
 		userID = id.(string)
 	}
-	log.Println(order)
+
 	if c.Request().Header.Get("Content-Type") != "text/plain" {
 		config.Logger.Info(c.Response().Header().Get("Content-Type"))
 		return c.NoContent(http.StatusBadRequest)
@@ -136,15 +136,9 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 	if ok := utils.ValidOrder(num); !ok {
 		return c.NoContent(http.StatusUnprocessableEntity)
 	}
-	order.NumOrder = string(body)
-	order.OrderStatus = config.NEW
-	order.Accrual = 0.0
+	orderNum = string(body)
 
-	task.UserID = userID
-	task.NumOrder = string(body)
-	task.IsNew = true
-
-	if err = h.db.SetAccrualOrder(order, userID); err != nil {
+	if err = h.ord.SetNewOrder(orderNum, userID); err != nil {
 		if errors.Is(err, errs.ErrAlreadyUploadThisUser) {
 
 			return c.NoContent(http.StatusOK)
@@ -156,13 +150,12 @@ func (h *Handler) PostUserOrders(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	h.inWorker.Do(task)
 	return c.NoContent(http.StatusAccepted)
 }
 
 func (h *Handler) GetUserOrders(c echo.Context) error {
 
-	var orders []dto.Order
+	var orders []dto.Order1
 	var err error
 	var userID string
 
@@ -182,7 +175,7 @@ func (h *Handler) GetUserOrders(c echo.Context) error {
 
 func (h *Handler) GetUserBalance(c echo.Context) error {
 
-	var useBalance *dto.UserBalance
+	var useBalance dto.UserBalance1
 	var err error
 	var userID string
 
@@ -192,23 +185,23 @@ func (h *Handler) GetUserBalance(c echo.Context) error {
 
 	config.Logger.Info(userID)
 
-	if useBalance, err = h.db.GetUserBalance(userID); err != nil {
+	if useBalance, err = h.ord.CheckBalance(userID); err != nil {
 		config.Logger.Warn("GetUserOrders", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.JSON(http.StatusOK, &useBalance)
+	return c.JSON(http.StatusOK, useBalance)
 }
 
 func (h *Handler) PostUserBalanceWithdraw(c echo.Context) error {
 
-	var withdrawals dto.Withdrawals
+	var withdrawals dto.Withdrawals1
 	var userID string
 
 	if id := c.Request().Context().Value(config.TokenKey); id != nil {
 		userID = id.(string)
 	}
-
+	config.Logger.Info(userID)
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil || len(body) == 0 {
 		return c.NoContent(http.StatusBadRequest)
@@ -219,7 +212,7 @@ func (h *Handler) PostUserBalanceWithdraw(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	if err = h.db.SetBalanceWithdraw(userID, withdrawals); err != nil {
+	if err = h.ord.SetBalanceWithdraw(withdrawals, userID); err != nil {
 		if errors.Is(err, errs.ErrNotFound) {
 			return c.NoContent(http.StatusUnprocessableEntity)
 		}
@@ -234,15 +227,16 @@ func (h *Handler) PostUserBalanceWithdraw(c echo.Context) error {
 }
 
 func (h *Handler) GetUserBalanceWithdrawals(c echo.Context) error {
-	var withdrawals []dto.Withdrawals
+	var withdrawals []dto.Withdrawals1
 	var err error
 	var userID string
 
 	if id := c.Request().Context().Value(config.TokenKey); id != nil {
 		userID = id.(string)
 	}
+	config.Logger.Info(userID)
 
-	if withdrawals, err = h.db.GetBalanceWithdrawals(userID); err != nil {
+	if withdrawals, err = h.ord.CheckBalanceWithdraw(userID); err != nil {
 		if errors.Is(err, errs.ErrNotFound) {
 			return c.NoContent(http.StatusNoContent)
 		}

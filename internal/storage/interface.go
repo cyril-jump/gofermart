@@ -7,10 +7,10 @@ type DB interface {
 	GetUserLogin(user dto.NewUser) (string, error)
 	SetAccrualOrder(response dto.AccrualResponse, userID string) error
 	UpdateAccrualOrder(response dto.AccrualResponse, userID string) error
-	GetAccrualOrder(userID string) ([]dto.Order, error)
-	GetUserBalance(userID string) (*dto.UserBalance, error)
-	SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error
-	GetBalanceWithdrawals(userID string) ([]dto.Withdrawals, error)
+	GetAccrualOrder(userID string) ([]dto.Order1, error)
+	GetUserBalance(userID string) (dto.UserBalance1, error)
+	SetBalanceWithdraw(userID string, withdraw dto.Withdrawals1) error
+	GetBalanceWithdrawals(userID string) ([]dto.Withdrawals1, error)
 	Ping() error
 	Close() error
 }
@@ -26,8 +26,8 @@ type AccrualDB interface {
 
 type OrderDB interface {
 	SetAccrualOrder(response dto.AccrualResponse, userID string) error
-	GetAccrualOrder(userID string) ([]dto.Order, error)
-	GetUserBalance(userID string) (*dto.UserBalance, error)
-	SetBalanceWithdraw(userID string, withdraw dto.Withdrawals) error
-	GetBalanceWithdrawals(userID string) ([]dto.Withdrawals, error)
+	GetAccrualOrder(userID string) ([]dto.Order1, error)
+	GetUserBalance(userID string) (dto.UserBalance1, error)
+	SetBalanceWithdraw(userID string, withdraw dto.Withdrawals1) error
+	GetBalanceWithdrawals(userID string) ([]dto.Withdrawals1, error)
 }

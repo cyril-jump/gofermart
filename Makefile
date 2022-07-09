@@ -1,0 +1,3 @@
+go-generate:
+	@echo "  >  Generating dependency files..."
+	go generate ./...
